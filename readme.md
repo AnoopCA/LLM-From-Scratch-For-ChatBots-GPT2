@@ -1,0 +1,1 @@
+This GitHub repository showcases a comprehensive machine learning project featuring an open-source ML chatbot trained on Ubuntu support data. The project focuses on diverse technical solutions and effective user query handling. The model does incorporation of custom multi-head attention mechanism and custom transformers, enhancing its capabilities in natural language processing.
