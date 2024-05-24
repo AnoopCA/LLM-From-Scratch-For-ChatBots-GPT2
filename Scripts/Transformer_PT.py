@@ -23,4 +23,4 @@ class Transformer:
     def attention(self):
 
         return model
-    
+
