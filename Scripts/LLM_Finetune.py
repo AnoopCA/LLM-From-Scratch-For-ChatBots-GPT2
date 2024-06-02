@@ -2,18 +2,20 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 import joblib
+import mmap
+import random
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-batch_size = 32
-block_size = 256 #128
-max_iters = 500 #200
+batch_size = 64 #32
+block_size = 128
+max_iters = 1000
 learning_rate = 1e-4 #3e-4
 eval_iters = 100
 n_embd = 512 #384
-n_head = 8 #1
-n_layer = 6 #1
-dropout = 0.35 #0.2
+n_head = 32 #1
+n_layer = 16 #1
+dropout = 0.40 #0.2
 
 chars = ""
 #with open("openwebtext/vocab.txt", 'r', encoding='utf-8') as f:
@@ -157,15 +159,67 @@ class GPTLanguageModel(nn.Module):
 
 model = GPTLanguageModel(vocab_size)
 model.to(device)
-
-optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=0.01)
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.1)
-
-joblib.dump(model,r'D:\ML_Projects\AI_Tech_ChatBot\Models\model-02.joblib')
-
-#print('loading model parameters...')
-#model = joblib.load(r'D:\ML_Projects\AI_Tech_ChatBot\Models\model-01.joblib')
 m = model.to(device)
+
+# memory map for using small snippets of text from a single file of any size
+def get_random_chunk(split):
+    filename = r'D:\ML_Projects\AI_Tech_ChatBot\Data\mbox\Inbox_cleaned_train.txt' if split == 'train' else r'D:\ML_Projects\AI_Tech_ChatBot\Data\mbox\Inbox_cleaned_val.txt'
+    with open(filename, 'rb') as f:
+        with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
+            # Determine the file size and a random position to start reading
+            file_size = len(mm)
+            start_pos = random.randint(0, (file_size) - block_size*batch_size)
+            # Seek to the random position and read the block of text
+            mm.seek(start_pos)
+            block = mm.read(block_size*batch_size-1)
+            # Decode the block to a string, ignoring any invalid byte sequences
+            decoded_block = block.decode('utf-8', errors='ignore').replace('\r', '')
+            # Train and test splits
+            data = torch.tensor(encode(decoded_block), dtype=torch.long)
+    return data
+
+def get_batch(split):
+    data = get_random_chunk(split)
+    ix = torch.randint(len(data) - block_size, (batch_size,))
+    x = torch.stack([data[i:i+block_size] for i in ix])
+    y = torch.stack([data[i+1:i+block_size+1] for i in ix])
+    x, y = x.to(device), y.to(device)
+    return x, y
+
+@torch.no_grad()
+def estimate_loss():
+    out = {}
+    model.eval()
+    for split in ['train', 'val']:
+        losses = torch.zeros(eval_iters)
+        for k in range(eval_iters):
+            X, Y = get_batch(split)
+            logits, loss = model(X, Y)
+            losses[k] = loss.item()
+        out[split] = losses.mean()
+    model.train()
+    return out
+
+# create a PyTorch optimizer
+optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+
+for iter in range(max_iters):
+    #print(iter)
+    if iter % eval_iters == 0:
+        losses = estimate_loss()
+        print(f"step: {iter}, train loss: {losses['train']:.3f}, val loss: {losses['val']:.3f}")
+
+    # sample a batch of data
+    xb, yb = get_batch('train')
+
+    # evaluate the loss
+    logits, loss = model.forward(xb, yb)
+    optimizer.zero_grad(set_to_none=True)
+    loss.backward()
+    optimizer.step()
+print(loss.item())
+
+joblib.dump(model,r'D:\ML_Projects\AI_Tech_ChatBot\Models\model-03.joblib')
 
 while True:
     prompt = input("Prompt (enter 'x' to exit):\n")
