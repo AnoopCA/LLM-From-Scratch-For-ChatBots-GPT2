@@ -7,18 +7,27 @@ import random
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-batch_size = 64 #32
-block_size = 128
-max_iters = 1000
+#batch_size = 64
+#block_size = 128
+#max_iters = 100
+#learning_rate = 1e-4 #3e-4
+#eval_iters = 100
+#n_embd = 384
+#n_head = 12 #1
+#n_layer = 12 #1
+#dropout = 0.1 #0.2
+
+batch_size = 8
+block_size = 512
+max_iters = 5000
 learning_rate = 1e-4 #3e-4
 eval_iters = 100
-n_embd = 512 #384
-n_head = 32 #1
-n_layer = 16 #1
-dropout = 0.40 #0.2
+n_embd = 768
+n_head = 12 #1
+n_layer = 12 #1
+dropout = 0.1 #0.2
 
 chars = ""
-#with open("openwebtext/vocab.txt", 'r', encoding='utf-8') as f:
 with open(r'D:\ML_Projects\AI_Tech_ChatBot\Data\mbox\Inbox_cleaned.txt', 'r', encoding='utf-8') as f:
         text = f.read()
         chars = sorted(list(set(text)))
@@ -125,7 +134,6 @@ class GPTLanguageModel(nn.Module):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
     def forward(self, index, targets=None):
-        #print(index.shape)
         B, T = index.shape
         
         # idx and targets are both (B,T) tensor of integers
@@ -156,10 +164,6 @@ class GPTLanguageModel(nn.Module):
             index_next = torch.multinomial(probs, num_samples=1) # (B, 1) # sample from the distribution
             index = torch.cat((index, index_next), dim=1) # (B, T+1) # append sampled index to the running sequence
         return index
-
-model = GPTLanguageModel(vocab_size)
-model.to(device)
-m = model.to(device)
 
 # memory map for using small snippets of text from a single file of any size
 def get_random_chunk(split):
@@ -199,32 +203,26 @@ def estimate_loss():
         out[split] = losses.mean()
     model.train()
     return out
+import os
+if __name__ == "__main__":
+    model = GPTLanguageModel(vocab_size)
+    model.to(device)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
-# create a PyTorch optimizer
-optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+    for iter in range(max_iters):
+        if iter % eval_iters == 0:
+            losses = estimate_loss()
+            print(f"step: {iter}, train loss: {losses['train']:.3f}, val loss: {losses['val']:.3f}")
+            torch.save(model, os.path.join(r'D:\ML_Projects\AI_Tech_ChatBot\Models\model_checkpoints', f'model_temp_{iter}.pth'))
 
-for iter in range(max_iters):
-    #print(iter)
-    if iter % eval_iters == 0:
-        losses = estimate_loss()
-        print(f"step: {iter}, train loss: {losses['train']:.3f}, val loss: {losses['val']:.3f}")
+        # sample a batch of data
+        xb, yb = get_batch('train')
 
-    # sample a batch of data
-    xb, yb = get_batch('train')
+        # evaluate the loss
+        logits, loss = model.forward(xb, yb)
+        optimizer.zero_grad(set_to_none=True)
+        loss.backward()
+        optimizer.step()
+    print(loss.item())
 
-    # evaluate the loss
-    logits, loss = model.forward(xb, yb)
-    optimizer.zero_grad(set_to_none=True)
-    loss.backward()
-    optimizer.step()
-print(loss.item())
-
-joblib.dump(model,r'D:\ML_Projects\AI_Tech_ChatBot\Models\model-03.joblib')
-
-while True:
-    prompt = input("Prompt (enter 'x' to exit):\n")
-    if str.lower(prompt) == "x":
-        break
-    context = torch.tensor(encode(prompt), dtype=torch.long, device=device)
-    generated_chars = decode(m.generate(context.unsqueeze(0), max_new_tokens=150)[0].tolist())
-    print(f'Generated text:\n{generated_chars}')
+    torch.save(model, r'D:\ML_Projects\AI_Tech_ChatBot\Models\model-06.pth')
