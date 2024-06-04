@@ -1,17 +1,17 @@
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
-import joblib
 import mmap
 import random
+import os
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 #batch_size = 64
 #block_size = 128
-#max_iters = 100
-#learning_rate = 1e-4 #3e-4
-#eval_iters = 100
+#max_iters = 3 #100
+#learning_rate = 1e-4
+#eval_iters = 1 #10
 #n_embd = 384
 #n_head = 12 #1
 #n_layer = 12 #1
@@ -20,7 +20,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 batch_size = 8
 block_size = 512
 max_iters = 5000
-learning_rate = 1e-4 #3e-4
+learning_rate = 1e-4
 eval_iters = 100
 n_embd = 768
 n_head = 12 #1
@@ -29,11 +29,10 @@ dropout = 0.1 #0.2
 
 chars = ""
 with open(r'D:\ML_Projects\AI_Tech_ChatBot\Data\mbox\Inbox_cleaned.txt', 'r', encoding='utf-8') as f:
-        text = f.read()
-        chars = sorted(list(set(text)))
-        
-vocab_size = len(chars)
+    text = f.read()
+    chars = sorted(list(set(text)))
 
+vocab_size = len(chars)
 string_to_int = { ch:i for i,ch in enumerate(chars) }
 int_to_string = { i:ch for i,ch in enumerate(chars) }
 encode = lambda s: [string_to_int[c] for c in s]
@@ -203,7 +202,7 @@ def estimate_loss():
         out[split] = losses.mean()
     model.train()
     return out
-import os
+
 if __name__ == "__main__":
     model = GPTLanguageModel(vocab_size)
     model.to(device)
@@ -213,7 +212,7 @@ if __name__ == "__main__":
         if iter % eval_iters == 0:
             losses = estimate_loss()
             print(f"step: {iter}, train loss: {losses['train']:.3f}, val loss: {losses['val']:.3f}")
-            torch.save(model, os.path.join(r'D:\ML_Projects\AI_Tech_ChatBot\Models\model_checkpoints', f'model_temp_{iter}.pth'))
+            torch.save(model, os.path.join(r'D:\ML_Projects\AI_Tech_ChatBot\Models\model_checkpoints', f'model_temp_{iter}_loss-{losses["val"]:.3f}.pth'))
 
         # sample a batch of data
         xb, yb = get_batch('train')
@@ -225,4 +224,4 @@ if __name__ == "__main__":
         optimizer.step()
     print(loss.item())
 
-    torch.save(model, r'D:\ML_Projects\AI_Tech_ChatBot\Models\model-06.pth')
+    torch.save(model, os.path.join(r'D:\ML_Projects\AI_Tech_ChatBot\Models', f'model-06_loss-{loss.item():.3f}.pth'))
