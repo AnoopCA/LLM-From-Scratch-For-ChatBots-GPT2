@@ -2,7 +2,7 @@ import torch
 import sys
 
 sys.path.append(r'D:\ML_Projects\AI_Tech_ChatBot\Scripts')
-from LLM_Finetune import Head, MultiHeadAttention, FeedFoward, Block, GPTLanguageModel, encode, decode, string_to_int, int_to_string
+from LLM_Finetune_Char import Head, MultiHeadAttention, FeedFoward, Block, GPTLanguageModel, encode, decode, string_to_int, int_to_string
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
