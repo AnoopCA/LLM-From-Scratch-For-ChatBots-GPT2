@@ -27,17 +27,6 @@ n_head = 12 #1
 n_layer = 12 #1
 dropout = 0.1 #0.2
 
-chars = ""
-with open(r'D:\ML_Projects\AI_Tech_ChatBot\Data\mbox\Inbox_cleaned.txt', 'r', encoding='utf-8') as f:
-    text = f.read()
-    chars = sorted(list(set(text)))
-
-vocab_size = len(chars)
-string_to_int = { ch:i for i,ch in enumerate(chars) }
-int_to_string = { i:ch for i,ch in enumerate(chars) }
-encode = lambda s: [string_to_int[c] for c in s]
-decode = lambda l: ''.join([int_to_string[i] for i in l])
-
 class Head(nn.Module):
     """ one head of self-attention """
 
@@ -163,6 +152,17 @@ class GPTLanguageModel(nn.Module):
             index_next = torch.multinomial(probs, num_samples=1) # (B, 1) # sample from the distribution
             index = torch.cat((index, index_next), dim=1) # (B, T+1) # append sampled index to the running sequence
         return index
+
+chars = ""
+with open(r'D:\ML_Projects\AI_Tech_ChatBot\Data\mbox\Inbox_cleaned.txt', 'r', encoding='utf-8') as f:
+    text = f.read()
+    chars = sorted(list(set(text)))
+
+vocab_size = len(chars)
+string_to_int = { ch:i for i,ch in enumerate(chars) }
+int_to_string = { i:ch for i,ch in enumerate(chars) }
+encode = lambda s: [string_to_int[c] for c in s]
+decode = lambda l: ''.join([int_to_string[i] for i in l])
 
 # memory map for using small snippets of text from a single file of any size
 def get_random_chunk(split):
