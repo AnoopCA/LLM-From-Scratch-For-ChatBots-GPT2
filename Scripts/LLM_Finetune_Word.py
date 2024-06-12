@@ -1,31 +1,34 @@
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
-import mmap
-import random
+#import mmap
+#import random
 import os
+from gensim.models import KeyedVectors
+import numpy as np
+import pandas as pd
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-#batch_size = 64
-#block_size = 128
-#max_iters = 3 #100
-#learning_rate = 1e-4
-#eval_iters = 1 #10
-#n_embd = 384
-#n_head = 12 #1
-#n_layer = 12 #1
-#dropout = 0.1 #0.2
-
-batch_size = 8
-block_size = 512
-max_iters = 5000
+batch_size = 2 #64
+block_size = 128
+max_iters = 3 #100
 learning_rate = 1e-4
-eval_iters = 100
-n_embd = 768
+eval_iters = 1 #10
+n_embd = 384
 n_head = 12 #1
 n_layer = 12 #1
 dropout = 0.1 #0.2
+
+#batch_size = 8
+#block_size = 512
+#max_iters = 5000
+#learning_rate = 1e-4
+#eval_iters = 100
+#n_embd = 768
+#n_head = 12 #1
+#n_layer = 12 #1
+#dropout = 0.1 #0.2
 
 class Head(nn.Module):
     """ one head of self-attention """
@@ -153,41 +156,39 @@ class GPTLanguageModel(nn.Module):
             index = torch.cat((index, index_next), dim=1) # (B, T+1) # append sampled index to the running sequence
         return index
 
-chars = ""
-with open(r'D:\ML_Projects\AI_Tech_ChatBot\Data\mbox\Inbox_cleaned.txt', 'r', encoding='utf-8') as f:
-    text = f.read()
-    chars = sorted(list(set(text)))
+word2vec_model = KeyedVectors.load_word2vec_format(r'D:\ML_Projects\Vehicle_Insurance_Claims_Prediction\models\GoogleNews-vectors-negative300.bin', binary=True)
 
-vocab_size = len(chars)
-string_to_int = { ch:i for i,ch in enumerate(chars) }
-int_to_string = { i:ch for i,ch in enumerate(chars) }
-encode = lambda s: [string_to_int[c] for c in s]
-decode = lambda l: ''.join([int_to_string[i] for i in l])
+def get_word_vector(word):
+    try:
+        return word2vec_model[word]
+    except KeyError:
+        return np.zeros(word2vec_model.vector_size)
 
-# memory map for using small snippets of text from a single file of any size
-def get_random_chunk(split):
-    filename = r'D:\ML_Projects\AI_Tech_ChatBot\Data\mbox\Inbox_cleaned_train.txt' if split == 'train' else r'D:\ML_Projects\AI_Tech_ChatBot\Data\mbox\Inbox_cleaned_val.txt'
-    with open(filename, 'rb') as f:
-        with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
-            # Determine the file size and a random position to start reading
-            file_size = len(mm)
-            start_pos = random.randint(0, (file_size) - block_size*batch_size)
-            # Seek to the random position and read the block of text
-            mm.seek(start_pos)
-            block = mm.read(block_size*batch_size-1)
-            # Decode the block to a string, ignoring any invalid byte sequences
-            decoded_block = block.decode('utf-8', errors='ignore').replace('\r', '')
-            # Train and test splits
-            data = torch.tensor(encode(decoded_block), dtype=torch.long)
-    return data
+def pad_or_truncate(sequence, max_length):
+    if len(sequence) > max_length:
+        return sequence[:max_length]
+    elif len(sequence) < max_length:
+        padding = [np.zeros(word2vec_model.vector_size)] * (max_length - len(sequence))
+        return sequence + padding
+    return sequence
 
-def get_batch(split):
-    data = get_random_chunk(split)
-    ix = torch.randint(len(data) - block_size, (batch_size,))
-    x = torch.stack([data[i:i+block_size] for i in ix])
-    y = torch.stack([data[i+1:i+block_size+1] for i in ix])
-    x, y = x.to(device), y.to(device)
-    return x, y
+# Load the question-answer dataset
+qa_data = pd.read_csv(r'D:\ML_Projects\AI_Tech_ChatBot\Data\ChatGPT_chatlogs\GPT_chatlogs_all.csv')
+
+def preprocess_data(data):
+    questions = []
+    answers = []
+    for i in range(len(data)):
+        question = data['Question'][i].split()
+        answer = data['Answer'][i].split()
+        question_vectors = [get_word_vector(w) for w in question]
+        answer_vectors = [get_word_vector(w) for w in answer]
+        questions.append(pad_or_truncate(question_vectors, block_size))
+        answers.append(pad_or_truncate(answer_vectors, block_size))
+    return np.array(questions), np.array(answers)
+
+questions, answers = preprocess_data(qa_data)
+vocab_size = word2vec_model.vector_size  # Size of Word2Vec embeddings
 
 @torch.no_grad()
 def estimate_loss():
@@ -203,6 +204,14 @@ def estimate_loss():
     model.train()
     return out
 
+def get_batch(split):
+    data_len = len(questions) if split == 'train' else len(answers)
+    ix = torch.randint(data_len, (batch_size,))
+    x = torch.tensor(questions[ix])
+    y = torch.tensor(answers[ix])
+    x, y = x.to(device), y.to(device)
+    return x, y
+
 if __name__ == "__main__":
     model = GPTLanguageModel(vocab_size)
     model.to(device)
@@ -212,7 +221,7 @@ if __name__ == "__main__":
         if iter % eval_iters == 0:
             losses = estimate_loss()
             print(f"step: {iter}, train loss: {losses['train']:.3f}, val loss: {losses['val']:.3f}")
-            torch.save(model, os.path.join(r'D:\ML_Projects\AI_Tech_ChatBot\Models\model_checkpoints', f'model_temp_{iter}_loss-{losses["val"]:.3f}.pth'))
+            torch.save(model, os.path.join('path_to_your_model_checkpoints', f'model_temp_{iter}_loss-{losses["val"]:.3f}.pth'))
 
         # sample a batch of data
         xb, yb = get_batch('train')
@@ -224,4 +233,4 @@ if __name__ == "__main__":
         optimizer.step()
     print(loss.item())
 
-    torch.save(model, os.path.join(r'D:\ML_Projects\AI_Tech_ChatBot\Models', f'model-06_loss-{loss.item():.3f}.pth'))
+    torch.save(model, os.path.join('path_to_your_model_checkpoints', f'model-06_loss-{loss.item():.3f}.pth'))
