@@ -7,25 +7,25 @@ import os
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-#batch_size = 64
-#block_size = 128
-#max_iters = 3 #100
+batch_size = 2 #64
+block_size = 8 #128
+max_iters = 1 #3 #100
+learning_rate = 1e-4
+eval_iters = 1 #10
+n_embd = 300
+n_head = 1 #12
+n_layer = 1 #12
+dropout = 0.1 #0.2
+
+#batch_size = 8
+#block_size = 512
+#max_iters = 5000
 #learning_rate = 1e-4
-#eval_iters = 1 #10
-#n_embd = 384
+#eval_iters = 100
+#n_embd = 768
 #n_head = 12 #1
 #n_layer = 12 #1
 #dropout = 0.1 #0.2
-
-batch_size = 8
-block_size = 512
-max_iters = 5000
-learning_rate = 1e-4
-eval_iters = 100
-n_embd = 768
-n_head = 12 #1
-n_layer = 12 #1
-dropout = 0.1 #0.2
 
 chars = ""
 with open(r'D:\ML_Projects\AI_Tech_ChatBot\Data\mbox\Inbox_cleaned.txt', 'r', encoding='utf-8') as f:
@@ -198,6 +198,7 @@ def estimate_loss():
         losses = torch.zeros(eval_iters)
         for k in range(eval_iters):
             X, Y = get_batch(split)
+            print(X.shape, ":", Y.shape)
             logits, loss = model(X, Y)
             losses[k] = loss.item()
         out[split] = losses.mean()

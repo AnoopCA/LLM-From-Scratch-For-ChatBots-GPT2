@@ -12,12 +12,12 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 batch_size = 1 #64
 block_size = 300
-max_iters = 3 #100
+max_iters = 1 #100
 learning_rate = 1e-4
 eval_iters = 1 #10
 n_embd = 300
-n_head = 12 #1
-n_layer = 12 #1
+n_head = 1 #12
+n_layer = 1 #12
 dropout = 0.1 #0.2
 
 #batch_size = 8
@@ -125,7 +125,6 @@ class GPTLanguageModel(nn.Module):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
     def forward(self, index, targets=None):
-        print(index.shape)
         B, T = index.shape
 
         # idx and targets are both (B,T) tensor of integers
@@ -174,7 +173,7 @@ def pad_or_truncate(sequence, max_length):
     return sequence
 
 # Load the question-answer dataset
-qa_data = pd.read_csv(r'D:\ML_Projects\AI_Tech_ChatBot\Data\ChatGPT_chatlogs\GPT_chatlogs_all_filtered_1.csv')
+qa_data = pd.read_csv(r'D:\ML_Projects\AI_Tech_ChatBot\Data\ChatGPT_chatlogs\GPT_chatlogs_all_filtered_Q50_A50_10K.csv')
 
 def preprocess_data(data):
     questions = []
@@ -210,6 +209,7 @@ def estimate_loss():
 
 def get_batch(split):
     data_len = len(questions) if split == 'train' else len(answers)
+    
     ix = torch.randint(data_len, (batch_size,))
     x = torch.tensor(questions[ix])
     y = torch.tensor(answers[ix])
