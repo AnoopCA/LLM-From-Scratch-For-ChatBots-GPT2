@@ -10,12 +10,12 @@ import pandas as pd
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-batch_size = 2 #64
-block_size = 128
+batch_size = 1 #64
+block_size = 300
 max_iters = 3 #100
 learning_rate = 1e-4
 eval_iters = 1 #10
-n_embd = 384
+n_embd = 300
 n_head = 12 #1
 n_layer = 12 #1
 dropout = 0.1 #0.2
@@ -125,8 +125,9 @@ class GPTLanguageModel(nn.Module):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
     def forward(self, index, targets=None):
+        print(index.shape)
         B, T = index.shape
-        
+
         # idx and targets are both (B,T) tensor of integers
         tok_emb = self.token_embedding_table(index) # (B,T,C)
         pos_emb = self.position_embedding_table(torch.arange(T, device=device)) # (T,C)
@@ -173,14 +174,17 @@ def pad_or_truncate(sequence, max_length):
     return sequence
 
 # Load the question-answer dataset
-qa_data = pd.read_csv(r'D:\ML_Projects\AI_Tech_ChatBot\Data\ChatGPT_chatlogs\GPT_chatlogs_all.csv')
+qa_data = pd.read_csv(r'D:\ML_Projects\AI_Tech_ChatBot\Data\ChatGPT_chatlogs\GPT_chatlogs_all_filtered_1.csv')
 
 def preprocess_data(data):
     questions = []
     answers = []
     for i in range(len(data)):
-        question = data['Question'][i].split()
-        answer = data['Answer'][i].split()
+        try:
+            question = data['Question'][i].split()
+            answer = data['Answer'][i].split()
+        except:
+            continue
         question_vectors = [get_word_vector(w) for w in question]
         answer_vectors = [get_word_vector(w) for w in answer]
         questions.append(pad_or_truncate(question_vectors, block_size))
