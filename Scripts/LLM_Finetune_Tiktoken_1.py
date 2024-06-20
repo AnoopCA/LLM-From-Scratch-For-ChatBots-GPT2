@@ -1,14 +1,14 @@
+import pandas as pd
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
-import mmap
-import random
+import tiktoken
 import os
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 batch_size = 2 #64
-block_size = 8 #10 #128
+block_size = 8 #128
 max_iters = 1 #3 #100
 learning_rate = 1e-4
 eval_iters = 1 #10
@@ -27,16 +27,15 @@ dropout = 0.1 #0.2
 #n_layer = 12 #1
 #dropout = 0.1 #0.2
 
-chars = ""
-with open(r'D:\ML_Projects\AI_Tech_ChatBot\Data\mbox\Inbox_cleaned.txt', 'r', encoding='utf-8') as f:
-    text = f.read()
-    chars = sorted(list(set(text)))
+qa_data = pd.read_csv(r'D:\ML_Projects\AI_Tech_ChatBot\Data\ChatGPT_chatlogs\GPT_chatlogs_Q_Tag_11.9K.csv')
+tokenizer = tiktoken.get_encoding("cl100k_base")
 
-vocab_size = len(chars)
-string_to_int = { ch:i for i,ch in enumerate(chars) }
-int_to_string = { i:ch for i,ch in enumerate(chars) }
-encode = lambda s: [string_to_int[c] for c in s]
-decode = lambda l: ''.join([int_to_string[i] for i in l])
+unique_tokens = set()
+for row in qa_data.itertuples():
+    chat = row.Question + "\n" + row.Answer
+    tokens = tokenizer.encode(chat)
+    unique_tokens.update(tokens)
+vocab_size = len(unique_tokens)
 
 class Head(nn.Module):
     """ one head of self-attention """
@@ -78,7 +77,6 @@ class MultiHeadAttention(nn.Module):
         out = torch.cat([h(x) for h in self.heads], dim=-1) # (B, T, F) -> (B, T, [h1, h1, h1, h1, h2, h2, h2, h2, h3, h3, h3, h3])
         out = self.dropout(self.proj(out))
         return out
-    
 
 class FeedFoward(nn.Module):
     """ a simple linear layer followed by a non-linearity """
@@ -133,10 +131,13 @@ class GPTLanguageModel(nn.Module):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
     def forward(self, index, targets=None):
+        #print('Here is the index shape:', index.shape)
         B, T = index.shape
-        
-        print(index.shape)
-        print(self.token_embedding_table.weight.shape)
+        #print("vocab_size, n_embd:", vocab_size, ",", n_embd)
+        #print("block_size, n_embd:", block_size, ",", n_embd)
+        #print("B, T: ", B, ",", T)
+        print(index)
+
         # idx and targets are both (B,T) tensor of integers
         tok_emb = self.token_embedding_table(index) # (B,T,C)
         pos_emb = self.position_embedding_table(torch.arange(T, device=device)) # (T,C)
@@ -166,44 +167,38 @@ class GPTLanguageModel(nn.Module):
             index = torch.cat((index, index_next), dim=1) # (B, T+1) # append sampled index to the running sequence
         return index
 
-# memory map for using small snippets of text from a single file of any size
-def get_random_chunk(split):
-    filename = r'D:\ML_Projects\AI_Tech_ChatBot\Data\mbox\Inbox_cleaned_train.txt' if split == 'train' else r'D:\ML_Projects\AI_Tech_ChatBot\Data\mbox\Inbox_cleaned_val.txt'
-    with open(filename, 'rb') as f:
-        with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
-            # Determine the file size and a random position to start reading
-            file_size = len(mm)
-            start_pos = random.randint(0, (file_size) - block_size*batch_size)
-            # Seek to the random position and read the block of text
-            mm.seek(start_pos)
-            block = mm.read(block_size*batch_size-1)
-            # Decode the block to a string, ignoring any invalid byte sequences
-            decoded_block = block.decode('utf-8', errors='ignore').replace('\r', '')
-            # Train and test splits
-            data = torch.tensor(encode(decoded_block), dtype=torch.long)
-    return data
+def process_data(qa_data, tokenizer):
+    tokens = []
+    for row in qa_data.itertuples():
+        chat = row.Question + "\n" + row.Answer
+        tokens.append(tokenizer.encode(chat))
+    return tokens
 
-def get_batch(split):
-    data = get_random_chunk(split)
-    ix = torch.randint(len(data) - block_size, (batch_size,))
-    x = torch.stack([data[i:i+block_size] for i in ix])
-    y = torch.stack([data[i+1:i+block_size+1] for i in ix])
-    x, y = x.to(device), y.to(device)
-    return x, y
+def get_batch(qa_tokenized):
+    X = []
+    Y = []
+    for i in range(batch_size):
+        rand_row = torch.randint(0, len(qa_tokenized), (1,))
+        token_len = block_size + 1
+        tokens = qa_tokenized[rand_row]
+        padded_tokens = tokens + [0] * (token_len - len(tokens)) if len(tokens) < token_len else tokens[:token_len]
+        X.append(padded_tokens[:-1])
+        Y.append(padded_tokens[1:])
+    x_batch = torch.tensor(X, dtype=torch.long)
+    y_batch = torch.tensor(Y, dtype=torch.long)
+    return x_batch.to(device), y_batch.to(device)
+
+qa_tokenized = process_data(qa_data, tokenizer)
 
 @torch.no_grad()
 def estimate_loss():
-    out = {}
     model.eval()
-    for split in ['train', 'val']:
-        losses = torch.zeros(eval_iters)
-        for k in range(eval_iters):
-            X, Y = get_batch(split)
-            logits, loss = model(X, Y)
-            losses[k] = loss.item()
-        out[split] = losses.mean()
+    batch_x, batch_y = get_batch(qa_tokenized)
+    
+    logits, loss = model(batch_x, batch_y)
+    loss = loss.item()
     model.train()
-    return out
+    return loss
 
 if __name__ == "__main__":
     model = GPTLanguageModel(vocab_size)
@@ -211,14 +206,13 @@ if __name__ == "__main__":
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
     for iter in range(max_iters):
-        if iter % eval_iters == 0:
-            losses = estimate_loss()
-            print(f"step: {iter}, train loss: {losses['train']:.3f}, val loss: {losses['val']:.3f}")
-            torch.save(model, os.path.join(r'D:\ML_Projects\AI_Tech_ChatBot\Models\model_checkpoints', f'model_temp_{iter}_loss-{losses["val"]:.3f}.pth'))
+        losses = estimate_loss()
+        print(f"step: {iter}, train loss: {losses:.3f}")
+        torch.save(model, os.path.join(r'D:\ML_Projects\AI_Tech_ChatBot\Models\model_checkpoints', f'model_temp_{iter}_loss-{losses:.3f}.pth'))
 
         # sample a batch of data
-        xb, yb = get_batch('train')
-
+        xb, yb = get_batch(qa_tokenized)
+        
         # evaluate the loss
         logits, loss = model.forward(xb, yb)
         optimizer.zero_grad(set_to_none=True)
@@ -226,4 +220,4 @@ if __name__ == "__main__":
         optimizer.step()
     print(loss.item())
 
-    torch.save(model, os.path.join(r'D:\ML_Projects\AI_Tech_ChatBot\Models', f'model-07_loss-{loss.item():.3f}.pth'))
+    torch.save(model, os.path.join(r'D:\ML_Projects\AI_Tech_ChatBot\Models', f'model-08_loss-{loss.item():.3f}.pth'))
