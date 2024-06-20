@@ -134,9 +134,6 @@ class GPTLanguageModel(nn.Module):
 
     def forward(self, index, targets=None):
         B, T = index.shape
-        
-        print(index.shape)
-        print(self.token_embedding_table.weight.shape)
         # idx and targets are both (B,T) tensor of integers
         tok_emb = self.token_embedding_table(index) # (B,T,C)
         pos_emb = self.position_embedding_table(torch.arange(T, device=device)) # (T,C)
