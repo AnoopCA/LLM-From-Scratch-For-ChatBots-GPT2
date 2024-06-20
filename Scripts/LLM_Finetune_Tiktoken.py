@@ -8,7 +8,7 @@ import os
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 batch_size = 2 #64
-block_size = 8 #128
+block_size = 101 #128
 max_iters = 1 #3 #100
 learning_rate = 1e-4
 eval_iters = 1 #10
@@ -16,7 +16,7 @@ n_embd = 300
 n_head = 1 #12
 n_layer = 1 #12
 dropout = 0.1 #0.2
-vocab_size = 100 # Setting vocab_size as 100 as we fixed the max token length to 100. Have to correct it.
+vocab_size = 100 #100 # Setting vocab_size as 100 as we fixed the max token length to 100. Have to correct it.
 
 #batch_size = 8
 #block_size = 512
@@ -158,11 +158,32 @@ tokenizer = tiktoken.get_encoding("cl100k_base")
 
 qa_data = pd.read_csv(r'D:\ML_Projects\AI_Tech_ChatBot\Data\ChatGPT_chatlogs\GPT_chatlogs_Q_Tag_11.9K.csv')
 
+def process_data(qa_data, tokenizer):
+    X, Y = [], []
+    for row in qa_data.itertuples():
+        chat = row.Question + "\n" + row.Answer
+        tokens = tokenizer.encode(chat)
+        padded_tokens = tokens + [0] * (block_size - len(tokens)) if len(tokens) < block_size else tokens[:block_size]
+        X.append(padded_tokens[:-1])  # Input sequence (all tokens except the last one)
+        Y.append(padded_tokens[1:])   # Target sequence (all tokens except the first one)
+    return X, Y
+
+X, Y = process_data(qa_data, tokenizer)
+
+def get_batch(X, Y):
+    idx = torch.randint(0, len(X), (batch_size,))
+    x_batch = [torch.tensor(X[i], dtype=torch.long) for i in idx]
+    y_batch = [torch.tensor(Y[i], dtype=torch.long) for i in idx]
+    x_batch = torch.nn.utils.rnn.pad_sequence(x_batch, batch_first=True, padding_value=0)
+    y_batch = torch.nn.utils.rnn.pad_sequence(y_batch, batch_first=True, padding_value=0)
+    return x_batch.to(device), y_batch.to(device)
+
 @torch.no_grad()
 def estimate_loss():
     model.eval()
-    X, Y = get_batch()
-    logits, loss = model(X, Y)
+    batch_x, batch_y = get_batch(X, Y)
+    
+    logits, loss = model(batch_x, batch_y)
     loss = loss.item()
     model.train()
     return loss
@@ -178,8 +199,8 @@ if __name__ == "__main__":
         torch.save(model, os.path.join(r'D:\ML_Projects\AI_Tech_ChatBot\Models\model_checkpoints', f'model_temp_{iter}_loss-{losses:.3f}.pth'))
 
         # sample a batch of data
-        xb, yb = get_batch()
-
+        xb, yb = get_batch(X, Y)
+        
         # evaluate the loss
         logits, loss = model.forward(xb, yb)
         optimizer.zero_grad(set_to_none=True)
