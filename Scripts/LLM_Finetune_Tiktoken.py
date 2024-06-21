@@ -10,32 +10,24 @@ import random
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-#batch_size = 8 #64
-#block_size = 128 #10 #128
-#max_iters = 100 #3 #100
-#learning_rate = 1e-4
-#eval_iters = 1 #10
-#n_embd = 300
-#n_head = 8 #12
-#n_layer = 8 #12
-#dropout = 0.1 #0.2
-
-batch_size = 4 #8
-block_size = 512
-max_iters = 500
+batch_size = 2
+block_size = 1024
+max_iters = 100 #5000
 learning_rate = 1e-4
-eval_iters = 50
+eval_iters = 10 #200
 n_embd = 768
-n_head = 8 #12 #1
-n_layer = 8 #12 #1
-dropout = 0.25 #0.2
+n_head = 12
+n_layer = 12
+dropout = 0.2
 
-qa_data = pd.read_csv(r'D:\ML_Projects\AI_Tech_ChatBot\Data\ChatGPT_chatlogs\GPT_chatlogs_Q_Tag_11.9K.csv')
+#qa_data = pd.read_csv(r'D:\ML_Projects\AI_Tech_ChatBot\Data\ChatGPT_chatlogs\GPT_chatlogs_Q_Tag_11.9K.csv')
+qa_data = pd.read_excel(r'D:\ML_Projects\AI_Tech_ChatBot\Data\SQuAD\SQuAD_Preprocessed.xlsx')
 tokenizer = tiktoken.get_encoding("cl100k_base")
 
 unique_tokens = set()
 for row in qa_data.itertuples():
-    chat = row.Question + "\n" + row.Answer
+    #chat = row.Question + "\n" + row.Answer
+    chat = "Context: " + row.Context + " [SEP] Question: " + row.Question + " [SEP] Answer: " + str(row.Answer)
     tokens = tokenizer.encode(chat)
     unique_tokens.update(tokens)
 vocab_size = max(unique_tokens) + 1
@@ -168,7 +160,8 @@ class GPTLanguageModel(nn.Module):
 def process_data(qa_data, tokenizer):
     tokens = []
     for row in qa_data.itertuples():
-        chat = row.Question + "\n" + row.Answer
+        #chat = row.Question + "\n" + row.Answer
+        chat = "Context: " + row.Context + " [SEP] Question: " + row.Question + " [SEP] Answer: " + str(row.Answer)
         tokens.append(tokenizer.encode(chat))
     return tokens
 
@@ -222,4 +215,4 @@ if __name__ == "__main__":
         optimizer.step()
     print(loss.item())
 
-    torch.save(model, os.path.join(r'D:\ML_Projects\AI_Tech_ChatBot\Models', f'model-09_loss-{loss.item():.3f}.pth'))
+    torch.save(model, os.path.join(r'D:\ML_Projects\AI_Tech_ChatBot\Models', f'model-11_loss-{loss.item():.3f}.pth'))
