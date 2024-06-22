@@ -5,23 +5,21 @@ from torch.nn import functional as F
 import os
 import tiktoken
 
-import mmap
-import random
-
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-batch_size = 2
-block_size = 1024
-max_iters = 100 #5000
+batch_size = 8
+block_size = 512
+max_iters = 25000
 learning_rate = 1e-4
-eval_iters = 10 #200
+eval_iters = 500
 n_embd = 768
 n_head = 12
 n_layer = 12
 dropout = 0.2
 
 #qa_data = pd.read_csv(r'D:\ML_Projects\AI_Tech_ChatBot\Data\ChatGPT_chatlogs\GPT_chatlogs_Q_Tag_11.9K.csv')
-qa_data = pd.read_excel(r'D:\ML_Projects\AI_Tech_ChatBot\Data\SQuAD\SQuAD_Preprocessed.xlsx')
+#qa_data = pd.read_excel(r'D:\ML_Projects\AI_Tech_ChatBot\Data\SQuAD\SQuAD_Preprocessed.xlsx')
+qa_data = pd.read_excel(r'D:\ML_Projects\AI_Tech_ChatBot\Data\QuaC\QuaC_Preprocessed_18.9K Context_Trim.xlsx')
 tokenizer = tiktoken.get_encoding("cl100k_base")
 
 unique_tokens = set()
@@ -215,4 +213,4 @@ if __name__ == "__main__":
         optimizer.step()
     print(loss.item())
 
-    torch.save(model, os.path.join(r'D:\ML_Projects\AI_Tech_ChatBot\Models', f'model-11_loss-{loss.item():.3f}.pth'))
+    torch.save(model, os.path.join(r'D:\ML_Projects\AI_Tech_ChatBot\Models', f'model-12_loss-{loss.item():.3f}.pth'))
