@@ -7,8 +7,8 @@ import tiktoken
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-batch_size = 4
-block_size = 64
+batch_size = 2
+block_size = 512
 max_iters = 50000
 learning_rate = 1e-4
 eval_iters = 2000
@@ -21,13 +21,15 @@ dropout = 0.2
 #qa_data = pd.read_excel(r'D:\ML_Projects\AI_Tech_ChatBot\Data\SQuAD\SQuAD_Preprocessed.xlsx')
 #qa_data = pd.read_excel(r'D:\ML_Projects\AI_Tech_ChatBot\Data\QuaC\QuaC_Preprocessed_18.9K Context_Trim.xlsx')
 #qa_data = pd.read_excel(r'D:\ML_Projects\AI_Tech_ChatBot\Data\Kaggle\Human_Coversation.xlsx', sheet_name="Sheet1")
-qa_data = pd.read_csv(r'D:\ML_Projects\AI_Tech_ChatBot\Data\Kaggle\Conversation.csv')
+#qa_data = pd.read_csv(r'D:\ML_Projects\AI_Tech_ChatBot\Data\Kaggle\Conversation.csv')
+qa_data = pd.read_csv(r'D:\ML_Projects\AI_Tech_ChatBot\Data\Kaggle\FB_Chat.csv')
 
 tokenizer = tiktoken.get_encoding("cl100k_base")
 
 unique_tokens = set()
 for row in qa_data.itertuples():
-    chat = row.Question + " [SEP] " + row.Answer
+    chat = row.chat
+    #chat = row.Question + " [SEP] " + row.Answer
     #chat = "Context: " + row.Context + " [SEP] Question: " + row.Question + " [SEP] Answer: " + str(row.Answer)
     tokens = tokenizer.encode(chat)
     unique_tokens.update(tokens)
@@ -161,7 +163,8 @@ class GPTLanguageModel(nn.Module):
 def process_data(qa_data, tokenizer):
     tokens = []
     for row in qa_data.itertuples():
-        chat = row.Question + " [SEP] " + row.Answer
+        chat = row.chat
+        #chat = row.Question + " [SEP] " + row.Answer
         #chat = "Context: " + row.Context + " [SEP] Question: " + row.Question + " [SEP] Answer: " + str(row.Answer)
         tokens.append(tokenizer.encode(chat))
     return tokens
@@ -216,4 +219,4 @@ if __name__ == "__main__":
         optimizer.step()
     print(loss.item())
 
-    torch.save(model, os.path.join(r'D:\ML_Projects\AI_Tech_ChatBot\Models', f'model-18_loss-{loss.item():.3f}.pth'))
+    torch.save(model, os.path.join(r'D:\ML_Projects\AI_Tech_ChatBot\Models', f'model-21_loss-{loss.item():.3f}.pth'))
