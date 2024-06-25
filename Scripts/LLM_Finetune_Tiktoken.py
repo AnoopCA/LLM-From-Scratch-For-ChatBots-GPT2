@@ -8,13 +8,13 @@ import tiktoken
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 batch_size = 2
-block_size = 512
-max_iters = 50000
+block_size = 2
+max_iters = 2
 learning_rate = 1e-4
-eval_iters = 2000
+eval_iters = 1
 n_embd = 768
-n_head = 12
-n_layer = 12
+n_head = 1
+n_layer = 1
 dropout = 0.2
 
 #qa_data = pd.read_csv(r'D:\ML_Projects\AI_Tech_ChatBot\Data\ChatGPT_chatlogs\GPT_chatlogs_Q_Tag_11.9K.csv')
@@ -219,4 +219,4 @@ if __name__ == "__main__":
         optimizer.step()
     print(loss.item())
 
-    torch.save(model, os.path.join(r'D:\ML_Projects\AI_Tech_ChatBot\Models', f'model-21_loss-{loss.item():.3f}.pth'))
+    torch.save(model, os.path.join(r'D:\ML_Projects\AI_Tech_ChatBot\Models', f'model-22_loss-{loss.item():.3f}.pth'))
