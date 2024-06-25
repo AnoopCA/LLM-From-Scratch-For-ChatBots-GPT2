@@ -20,5 +20,5 @@ while True:
     #prompt = " [SEP] Question: " + str(prompt) + " [SEP] Answer: "
     #prompt = " [SEP] " + prompt #+ " [SEP] "
     context = torch.tensor(tokenizer.encode(prompt), dtype=torch.long, device=device)
-    generated_chars = tokenizer.decode(model.generate(context.unsqueeze(0), max_new_tokens=50)[0].tolist())
+    generated_chars = tokenizer.decode(model.generate(context.unsqueeze(0), max_new_tokens=10)[0].tolist())
     print(f'Generated text:\n{generated_chars}')
