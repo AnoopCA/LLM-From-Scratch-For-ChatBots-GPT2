@@ -1,3 +1,6 @@
+
+#LLM-From-Scratch-For-ChatBots-GPT2
+
 import pandas as pd
 import torch
 import torch.nn as nn
@@ -7,14 +10,14 @@ import tiktoken
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-batch_size = 2
-block_size = 2
-max_iters = 2
+batch_size = 1
+block_size = 512
+max_iters = 50000
 learning_rate = 1e-4
-eval_iters = 1
+eval_iters = 1000
 n_embd = 768
-n_head = 1
-n_layer = 1
+n_head = 12
+n_layer = 12
 dropout = 0.2
 
 #qa_data = pd.read_csv(r'D:\ML_Projects\AI_Tech_ChatBot\Data\ChatGPT_chatlogs\GPT_chatlogs_Q_Tag_11.9K.csv')
@@ -22,14 +25,14 @@ dropout = 0.2
 #qa_data = pd.read_excel(r'D:\ML_Projects\AI_Tech_ChatBot\Data\QuaC\QuaC_Preprocessed_18.9K Context_Trim.xlsx')
 #qa_data = pd.read_excel(r'D:\ML_Projects\AI_Tech_ChatBot\Data\Kaggle\Human_Coversation.xlsx', sheet_name="Sheet1")
 #qa_data = pd.read_csv(r'D:\ML_Projects\AI_Tech_ChatBot\Data\Kaggle\Conversation.csv')
-qa_data = pd.read_csv(r'D:\ML_Projects\AI_Tech_ChatBot\Data\Kaggle\FB_Chat.csv')
-
+#qa_data = pd.read_csv(r'D:\ML_Projects\AI_Tech_ChatBot\Data\Kaggle\FB_Chat.csv')
+qa_data = pd.read_excel(r'D:\ML_Projects\AI_Tech_ChatBot\Data\Huggingface\Customer_Support_Hugg_Preprocessed.xlsx')
 tokenizer = tiktoken.get_encoding("cl100k_base")
 
 unique_tokens = set()
 for row in qa_data.itertuples():
-    chat = row.chat
-    #chat = row.Question + " [SEP] " + row.Answer
+    #chat = row.chat
+    chat = row.Question + " [SEP] " + row.Answer
     #chat = "Context: " + row.Context + " [SEP] Question: " + row.Question + " [SEP] Answer: " + str(row.Answer)
     tokens = tokenizer.encode(chat)
     unique_tokens.update(tokens)
@@ -163,8 +166,8 @@ class GPTLanguageModel(nn.Module):
 def process_data(qa_data, tokenizer):
     tokens = []
     for row in qa_data.itertuples():
-        chat = row.chat
-        #chat = row.Question + " [SEP] " + row.Answer
+        #chat = row.chat
+        chat = row.Question + " [SEP] " + row.Answer
         #chat = "Context: " + row.Context + " [SEP] Question: " + row.Question + " [SEP] Answer: " + str(row.Answer)
         tokens.append(tokenizer.encode(chat))
     return tokens
@@ -200,8 +203,11 @@ def estimate_loss():
     return out
 
 if __name__ == "__main__":
-    model = GPTLanguageModel(vocab_size)
+    saved_model_path = r'D:\ML_Projects\AI_Tech_ChatBot\Models\model-22_loss-0.159.pth'
+    #model = GPTLanguageModel(vocab_size)
+    model = torch.load(saved_model_path, map_location=device)
     model.to(device)
+
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
     for iter in range(max_iters):
@@ -219,4 +225,4 @@ if __name__ == "__main__":
         optimizer.step()
     print(loss.item())
 
-    torch.save(model, os.path.join(r'D:\ML_Projects\AI_Tech_ChatBot\Models', f'model-22_loss-{loss.item():.3f}.pth'))
+    torch.save(model, os.path.join(r'D:\ML_Projects\AI_Tech_ChatBot\Models', f'model-23_loss-{loss.item():.3f}.pth'))
