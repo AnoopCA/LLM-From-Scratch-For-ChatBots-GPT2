@@ -4,6 +4,7 @@
 import torch
 import sys
 import tiktoken
+import re
 
 sys.path.append(r'D:\ML_Projects\AI_Tech_ChatBot\Scripts')
 from LLM_Finetune_Tiktoken import Head, MultiHeadAttention, FeedFoward, Block, GPTLanguageModel
@@ -24,5 +25,13 @@ while True:
     #prompt = " [SEP] " + prompt #+ " [SEP] "
     prompt = prompt + " [SEP] "
     context = torch.tensor(tokenizer.encode(prompt), dtype=torch.long, device=device)
-    generated_chars = tokenizer.decode(model.generate(context.unsqueeze(0), max_new_tokens=250)[0].tolist())
-    print(f'Generated text:\n{generated_chars}')
+    generated_chars = tokenizer.decode(model.generate(context.unsqueeze(0), max_new_tokens=1000)[0].tolist())
+
+    pattern = r'\[SEP\]\s*(.*)'
+    match = re.search(pattern, generated_chars, re.DOTALL)
+    if match:
+        result = match.group(1)
+        result = re.sub(r'!{3,}', '', result)
+        print(f'Generated text:\n{result}')
+    else:
+        print(f'Generated text:\n{generated_chars}')
