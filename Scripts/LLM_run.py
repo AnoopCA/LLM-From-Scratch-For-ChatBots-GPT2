@@ -7,7 +7,7 @@ import tiktoken
 import re
 
 sys.path.append(r'D:\ML_Projects\AI_Tech_ChatBot\Scripts')
-from LLM_Finetune_Tiktoken import Head, MultiHeadAttention, FeedFoward, Block, GPTLanguageModel
+from LLM_GPT2_Tiktoken import Head, MultiHeadAttention, FeedFoward, Block, GPTLanguageModel
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 tokenizer = tiktoken.get_encoding("cl100k_base")

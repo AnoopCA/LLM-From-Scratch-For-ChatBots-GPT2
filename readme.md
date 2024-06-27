@@ -32,15 +32,11 @@ The project uses several datasets for training the model:
 ## Installation
 
 Clone the repository:
-```bash
+
 git clone https://github.com/yourusername/LLM-from-Scratch.git
 cd LLM-from-Scratch
 
-## Install the required packages:
-
-- **pip install -r requirements.txt
-
 ## References
 
-- **GPT-2:** 
-- **Tiktoken tokenizer:** 
+- **GPT-2:** https://www.youtube.com/watch?v=kCc8FmEb1nY&t=3752s
+- **Tiktoken tokenizer:** https://www.youtube.com/watch?v=zduSFxRajkE&t=5687s
