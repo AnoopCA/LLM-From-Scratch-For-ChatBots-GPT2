@@ -20,13 +20,13 @@ n_head = 12
 n_layer = 12
 dropout = 0.2
 
-#qa_data = pd.read_csv(r'D:\ML_Projects\AI_Tech_ChatBot\Data\ChatGPT_chatlogs\GPT_chatlogs_Q_Tag_11.9K.csv')
-#qa_data = pd.read_excel(r'D:\ML_Projects\AI_Tech_ChatBot\Data\SQuAD\SQuAD_Preprocessed.xlsx')
-#qa_data = pd.read_excel(r'D:\ML_Projects\AI_Tech_ChatBot\Data\QuaC\QuaC_Preprocessed_18.9K Context_Trim.xlsx')
-#qa_data = pd.read_excel(r'D:\ML_Projects\AI_Tech_ChatBot\Data\Kaggle\Human_Coversation.xlsx', sheet_name="Sheet1")
-#qa_data = pd.read_csv(r'D:\ML_Projects\AI_Tech_ChatBot\Data\Kaggle\Conversation.csv')
-#qa_data = pd.read_csv(r'D:\ML_Projects\AI_Tech_ChatBot\Data\Kaggle\FB_Chat.csv')
-qa_data = pd.read_excel(r'D:\ML_Projects\AI_Tech_ChatBot\Data\Huggingface\Customer_Support_Hugg_Preprocessed.xlsx')
+#qa_data = pd.read_csv(r'D:\ML_Projects\LLM-From-Scratch-For-ChatBots-GPT2\Data\ChatGPT_chatlogs\GPT_chatlogs_Q_Tag_11.9K.csv')
+#qa_data = pd.read_excel(r'D:\ML_Projects\LLM-From-Scratch-For-ChatBots-GPT2\Data\SQuAD\SQuAD_Preprocessed.xlsx')
+#qa_data = pd.read_excel(r'D:\ML_Projects\LLM-From-Scratch-For-ChatBots-GPT2\Data\QuaC\QuaC_Preprocessed_18.9K Context_Trim.xlsx')
+#qa_data = pd.read_excel(r'D:\ML_Projects\LLM-From-Scratch-For-ChatBots-GPT2\Data\Kaggle\Human_Coversation.xlsx', sheet_name="Sheet1")
+#qa_data = pd.read_csv(r'D:\ML_Projects\LLM-From-Scratch-For-ChatBots-GPT2\Data\Kaggle\Conversation.csv')
+#qa_data = pd.read_csv(r'D:\ML_Projects\LLM-From-Scratch-For-ChatBots-GPT2\Data\Kaggle\FB_Chat.csv')
+qa_data = pd.read_excel(r'D:\ML_Projects\LLM-From-Scratch-For-ChatBots-GPT2\Data\Huggingface\Customer_Support_Hugg_Preprocessed.xlsx')
 tokenizer = tiktoken.get_encoding("cl100k_base")
 
 unique_tokens = set()
@@ -203,7 +203,7 @@ def estimate_loss():
     return out
 
 if __name__ == "__main__":
-    saved_model_path = r'D:\ML_Projects\AI_Tech_ChatBot\Models\model-22_loss-0.159.pth'
+    saved_model_path = r'D:\ML_Projects\LLM-From-Scratch-For-ChatBots-GPT2\Models\model-22_loss-0.159.pth'
     #model = GPTLanguageModel(vocab_size)
     model = torch.load(saved_model_path, map_location=device)
     model.to(device)
@@ -214,7 +214,7 @@ if __name__ == "__main__":
         if iter % eval_iters == 0:
             losses = estimate_loss()
             print(f"step: {iter}, train loss: {losses['train']:.3f}, val loss: {losses['val']:.3f}")
-            torch.save(model, os.path.join(r'D:\ML_Projects\AI_Tech_ChatBot\Models\model_checkpoints', f'model_temp_{iter}_loss-{losses["val"]:.3f}.pth'))
+            torch.save(model, os.path.join(r'D:\ML_Projects\LLM-From-Scratch-For-ChatBots-GPT2\Models\model_checkpoints', f'model_temp_{iter}_loss-{losses["val"]:.3f}.pth'))
 
         # sample a batch of data
         xb, yb = get_batch(qa_tokenized, 'train')
@@ -225,4 +225,4 @@ if __name__ == "__main__":
         optimizer.step()
     print(loss.item())
 
-    torch.save(model, os.path.join(r'D:\ML_Projects\AI_Tech_ChatBot\Models', f'model-24_loss-{loss.item():.3f}.pth'))
+    torch.save(model, os.path.join(r'D:\ML_Projects\LLM-From-Scratch-For-ChatBots-GPT2\Models', f'model-24_loss-{loss.item():.3f}.pth'))

@@ -12,7 +12,7 @@ block_size = 8 #10 #128
 max_iters = 1 #3 #100
 learning_rate = 1e-4
 eval_iters = 1 #10
-n_embd = 300
+n_embd = 8 #300
 n_head = 1 #12
 n_layer = 1 #12
 dropout = 0.1 #0.2
@@ -28,7 +28,7 @@ dropout = 0.1 #0.2
 #dropout = 0.1 #0.2
 
 chars = ""
-with open(r'D:\ML_Projects\AI_Tech_ChatBot\Data\mbox\Inbox_cleaned.txt', 'r', encoding='utf-8') as f:
+with open(r'D:\ML_Projects\LLM-From-Scratch-For-ChatBots-GPT2\Data\mbox\Inbox_cleaned.txt', 'r', encoding='utf-8') as f:
     text = f.read()
     chars = sorted(list(set(text)))
 
@@ -165,7 +165,7 @@ class GPTLanguageModel(nn.Module):
 
 # memory map for using small snippets of text from a single file of any size
 def get_random_chunk(split):
-    filename = r'D:\ML_Projects\AI_Tech_ChatBot\Data\mbox\Inbox_cleaned_train.txt' if split == 'train' else r'D:\ML_Projects\AI_Tech_ChatBot\Data\mbox\Inbox_cleaned_val.txt'
+    filename = r'D:\ML_Projects\LLM-From-Scratch-For-ChatBots-GPT2\Data\mbox\Inbox_cleaned_train.txt' if split == 'train' else r'D:\ML_Projects\LLM-From-Scratch-For-ChatBots-GPT2\Data\mbox\Inbox_cleaned_val.txt'
     with open(filename, 'rb') as f:
         with mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mm:
             # Determine the file size and a random position to start reading
@@ -211,7 +211,7 @@ if __name__ == "__main__":
         if iter % eval_iters == 0:
             losses = estimate_loss()
             print(f"step: {iter}, train loss: {losses['train']:.3f}, val loss: {losses['val']:.3f}")
-            torch.save(model, os.path.join(r'D:\ML_Projects\AI_Tech_ChatBot\Models\model_checkpoints', f'model_temp_{iter}_loss-{losses["val"]:.3f}.pth'))
+            torch.save(model, os.path.join(r'D:\ML_Projects\LLM-From-Scratch-For-ChatBots-GPT2\Models\model_checkpoints', f'model_temp_{iter}_loss-{losses["val"]:.3f}.pth'))
 
         # sample a batch of data
         xb, yb = get_batch('train')
@@ -223,4 +223,4 @@ if __name__ == "__main__":
         optimizer.step()
     print(loss.item())
 
-    torch.save(model, os.path.join(r'D:\ML_Projects\AI_Tech_ChatBot\Models', f'model-07_loss-{loss.item():.3f}.pth'))
+    torch.save(model, os.path.join(r'D:\ML_Projects\LLM-From-Scratch-For-ChatBots-GPT2\Models', f'char_model-01_loss-{loss.item():.3f}.pth'))
