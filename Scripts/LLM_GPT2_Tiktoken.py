@@ -10,14 +10,14 @@ import tiktoken
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-batch_size = 1
-block_size = 512
-max_iters = 50000
+batch_size = 2 #1
+block_size = 8 #512
+max_iters = 2 #50000
 learning_rate = 1e-4
-eval_iters = 1000
-n_embd = 768
-n_head = 12
-n_layer = 12
+eval_iters = 1 #1000
+n_embd = 4 #768
+n_head = 2 #12
+n_layer = 2 #12
 dropout = 0.2
 
 #qa_data = pd.read_csv(r'D:\ML_Projects\LLM-From-Scratch-For-ChatBots-GPT2\Data\ChatGPT_chatlogs\GPT_chatlogs_Q_Tag_11.9K.csv')
