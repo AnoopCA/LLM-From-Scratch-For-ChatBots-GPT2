@@ -203,6 +203,7 @@ def estimate_loss():
     return out
 
 if __name__ == "__main__":
+    #Start over training on the pre-trained model with the same data
     saved_model_path = r'D:\ML_Projects\LLM-From-Scratch-For-ChatBots-GPT2\Models\model-22_loss-0.159.pth'
     #model = GPTLanguageModel(vocab_size)
     model = torch.load(saved_model_path, map_location=device)
