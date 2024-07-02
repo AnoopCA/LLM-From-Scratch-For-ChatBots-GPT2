@@ -7,25 +7,15 @@ import os
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-batch_size = 2 #64
-block_size = 8 #10 #128
-max_iters = 1 #3 #100
+batch_size = 8
+block_size = 512
+max_iters = 5000
 learning_rate = 1e-4
-eval_iters = 1 #10
-n_embd = 8 #300
-n_head = 1 #12
-n_layer = 1 #12
+eval_iters = 100
+n_embd = 768
+n_head = 12 #1
+n_layer = 12 #1
 dropout = 0.1 #0.2
-
-#batch_size = 8
-#block_size = 512
-#max_iters = 5000
-#learning_rate = 1e-4
-#eval_iters = 100
-#n_embd = 768
-#n_head = 12 #1
-#n_layer = 12 #1
-#dropout = 0.1 #0.2
 
 chars = ""
 with open(r'D:\ML_Projects\LLM-From-Scratch-For-ChatBots-GPT2\Data\mbox\Inbox_cleaned.txt', 'r', encoding='utf-8') as f:
