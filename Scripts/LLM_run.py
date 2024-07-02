@@ -10,10 +10,13 @@ sys.path.append(r'D:\ML_Projects\LLM-From-Scratch-For-ChatBots-GPT2\Scripts')
 from LLM_GPT2_Tiktoken import Head, MultiHeadAttention, FeedFoward, Block, GPTLanguageModel
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+#Load the GPT-4 tokenizer for tokenizing the text data
 tokenizer = tiktoken.get_encoding("cl100k_base")
 
+#Load the pre-trained model to generate text
 model = torch.load(r'D:\ML_Projects\LLM-From-Scratch-For-ChatBots-GPT2\Models\model-23_loss-0.181.pth')
 #model = torch.load(r'D:\ML_Projects\LLM-From-Scratch-For-ChatBots-GPT2\Models\model_checkpoints\model_temp_275_loss-1.209.pth')
+
 model.eval()
 model.to(device)
 
