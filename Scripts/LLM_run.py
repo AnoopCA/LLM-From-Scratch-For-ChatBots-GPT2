@@ -1,6 +1,3 @@
-
-#LLM-From-Scratch-For-ChatBots-GPT2
-
 import torch
 import sys
 import tiktoken
