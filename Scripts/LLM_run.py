@@ -4,6 +4,7 @@ import tiktoken
 import re
 
 sys.path.append(r'D:\ML_Projects\LLM-From-Scratch-For-ChatBots-GPT2\Scripts')
+# Import the GPT2 model created
 from LLM_GPT2_Tiktoken import Head, MultiHeadAttention, FeedFoward, Block, GPTLanguageModel
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
